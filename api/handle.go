@@ -185,6 +185,8 @@ func enqueueRelayActivity(fromDomain string, body []byte) {
 	pushActivityScript := "redis.call('HSET',KEYS[1], 'body', ARGV[1], 'remain_count', ARGV[2]); redis.call('EXPIRE', KEYS[1], ARGV[3]);"
 	RelayState.RedisClient.Eval(pushActivityScript, []string{"relay:activity:" + activityID.String()}, body, remainCount, 2*60).Result()
 
+	logrus.Info("Received post from ", fromDomain)
+
 	for _, subscription := range RelayState.Subscriptions {
 		if fromDomain == subscription.Domain {
 			continue
