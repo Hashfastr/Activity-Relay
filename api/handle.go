@@ -17,8 +17,10 @@ import (
 	"github.com/yukimochi/machinery-v1/v1/tasks"
 )
 
-//go:embed templates/landing.html
-var fem embed.FS
+var (
+	//go:embed templates/landing.html
+	fem embed.FS
+)
 
 func handleWebfinger(writer http.ResponseWriter, request *http.Request) {
 	queriedResource := request.URL.Query()["resource"]
@@ -88,13 +90,19 @@ func handleLanding(writer http.ResponseWriter, request *http.Request) {
 		}
 
 		data := struct {
-			RelayDomain   string
-			NumDomains    int
-			SubbedDomains []string
+			Domain         string
+			NumDomains     int
+			SubbedDomains  []string
+			ServiceSummary string
+			ServiceIcon    string
+			ServiceImage   string
 		}{
-			RelayDomain:   GlobalConfig.ServerHostname().String(),
-			NumDomains:    len(RelayState.Subscriptions),
-			SubbedDomains: []string{},
+			Domain:         GlobalConfig.ServerHostname().String(),
+			NumDomains:     len(RelayState.Subscriptions),
+			SubbedDomains:  []string{},
+			ServiceSummary: GlobalConfig.ServerServiceSummary(),
+			ServiceIcon:    GlobalConfig.ServerServiceIcon().String(),
+			ServiceImage:   GlobalConfig.ServerServiceImage().String(),
 		}
 
 		for i := 0; i < len(RelayState.Subscriptions); i++ {
