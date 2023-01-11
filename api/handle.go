@@ -1,16 +1,24 @@
 package api
 
 import (
+	"bytes"
+	"embed"
+	_ "embed"
 	"encoding/json"
 	"errors"
-	uuid "github.com/satori/go.uuid"
+	"html/template"
 	"net/http"
 	"net/url"
+
+	uuid "github.com/satori/go.uuid"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yukimochi/Activity-Relay/models"
 	"github.com/yukimochi/machinery-v1/v1/tasks"
 )
+
+//go:embed templates/landing.html
+var fem embed.FS
 
 func handleWebfinger(writer http.ResponseWriter, request *http.Request) {
 	queriedResource := request.URL.Query()["resource"]
@@ -65,6 +73,44 @@ func handleNodeinfo(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Add("Content-Type", "application/json")
 		writer.WriteHeader(200)
 		writer.Write(nodeinfo)
+	}
+}
+
+func handleLanding(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != "GET" {
+		writer.WriteHeader(400)
+		writer.Write(nil)
+	} else {
+
+		t, err := template.ParseFS(fem, "templates/landing.html")
+		if err != nil {
+			panic(err)
+		}
+
+		data := struct {
+			RelayDomain   string
+			NumDomains    int
+			SubbedDomains []string
+		}{
+			RelayDomain:   GlobalConfig.ServerHostname().String(),
+			NumDomains:    len(RelayState.Subscriptions),
+			SubbedDomains: []string{},
+		}
+
+		for i := 0; i < len(RelayState.Subscriptions); i++ {
+			data.SubbedDomains = append(data.SubbedDomains, RelayState.Subscriptions[i].Domain)
+		}
+
+		var htmlContent bytes.Buffer
+
+		err = t.Execute(&htmlContent, data)
+		if err != nil {
+			panic(err)
+		}
+
+		writer.Header().Add("Content-Type", "text/html")
+		writer.WriteHeader(200)
+		writer.Write(htmlContent.Bytes())
 	}
 }
 
